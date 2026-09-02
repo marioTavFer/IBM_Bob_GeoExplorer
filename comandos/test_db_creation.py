@@ -1,3 +1,4 @@
+# criação de trilhas de aprendizagem
 import os
 from dotenv import load_dotenv
 from appwrite.client import Client

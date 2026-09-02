@@ -2,7 +2,7 @@
 """
 Geo-Explorer - DIO AI Product
 Sistema de exploracao de trilhas de aprendizagem, desafios de codigo e emissao de certificados.
-Integrado ao Appwrite & desenvolvido com apoio do IBM Bob.
+Integrado ao Appwrite & desenvolvido com apoio do IBM Bob ( conjuntamente com DIO Agent e Antigravity).
 """
 
 import os

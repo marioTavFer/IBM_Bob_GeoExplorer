@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Servidor MCP para o Geo-Explorer (Appwrite Integration)
-Permite que Agentes de IA (como IBM Bob & Antigravity) consultem trilhas, desafios e emitam certificados via MCP.
+Servidor MCP para o Geo-Explorer (Appwrite Integration - com SDK atualizado )
+Permite que Agentes de IA (como IBM Bob &  DIO Agent + Antigravity) consultem trilhas, desafios e emitam certificados via MCP.
 """
 
 import os

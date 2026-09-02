@@ -1,7 +1,7 @@
 # Documentação Detalhada do Projeto Geo-Explorer
 
 > **Projeto desenvolvido para o Desafio de Projeto da DIO:** *"Construindo Seu Primeiro Produto com um Agente de IA"*  
-> **Mentor de IA / Apoio:** IBM Bob / DIO Agent (Antigravity) 
+> **Mentor de IA / Apoio:** IBM Bob / DIO Agent (+ Antigravity) 
 > **Desenvolvedor:** Mario TavFer (`marioTavFer`)  
 > **Repositório:** [https://github.com/marioTavFer/IBM_Bob_GeoExplorer](https://github.com/marioTavFer/IBM_Bob_GeoExplorer)
 
