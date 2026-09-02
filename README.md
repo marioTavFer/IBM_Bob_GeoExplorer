@@ -1,7 +1,7 @@
 # Geo-Explorer 🌍🤖
 
 > **Desafio de Projeto DIO:** *"Construindo Seu Primeiro Produto com um Agente de IA"*  
-> **Apoio de IA:** IBM Bob & DIO Agent  
+> **Apoio de IA:** IBM Bob & DIO Agent (Antigravity) 
 > **Desenvolvedor:** Mario TavFer ([@marioTavFer](https://github.com/marioTavFer))  
 > **Tecnologias:** Python 3.13, `uv`, Appwrite Cloud, FastMCP, Git.
 
