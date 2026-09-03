@@ -13,14 +13,7 @@ from dotenv import load_dotenv
 from appwrite.client import Client
 from appwrite.id import ID
 from appwrite.query import Query
-
-# Suporte ao API moderno TablesDB (Appwrite 1.8.0+) com fallback para Databases
-try:
-    from appwrite.services.tables_db import TablesDB
-    IS_TABLES_DB = True
-except ImportError:
-    from appwrite.services.databases import Databases
-    IS_TABLES_DB = False
+from appwrite.services.tables_db import TablesDB
 
 load_dotenv()
 
@@ -38,10 +31,7 @@ client.set_endpoint(ENDPOINT)
 client.set_project(PROJECT_ID)
 client.set_key(API_KEY)
 
-if IS_TABLES_DB:
-    db_service = TablesDB(client)
-else:
-    db_service = Databases(client)
+db_service = TablesDB(client)
 
 DB_ID = "escola"
 
@@ -58,53 +48,34 @@ def exibir_banner() -> None:
     print("=" * 65)
 
 
-def fetch_rows(collection_id: str, queries: list = None) -> list[dict]:
-    """Busca registros no Appwrite utilizando a API modernizada do TablesDB com fallback."""
+def fetch_rows(collection_id: str, queries: list | None = None) -> list[dict]:
+    """Busca registros no Appwrite utilizando o TablesDB (Appwrite 1.8.0+)."""
     if queries is None:
         queries = []
 
     try:
-        if IS_TABLES_DB:
-            resultado = db_service.list_rows(
-                database_id=DB_ID,
-                table_id=collection_id,
-                queries=queries
-            )
-            rows = getattr(resultado, "rows", [])
-            return [{"$id": getattr(r, "id", ""), **getattr(r, "data", {})} for r in rows]
-        else:
-            resultado = db_service.list_documents(
-                database_id=DB_ID,
-                collection_id=collection_id,
-                queries=queries
-            )
-            docs = getattr(resultado, "documents", [])
-            return [{"$id": getattr(d, "id", ""), **getattr(d, "data", {})} for d in docs]
+        resultado = db_service.list_rows(
+            database_id=DB_ID,
+            table_id=collection_id,
+            queries=queries
+        )
+        return [{"$id": r.id, **r.data} for r in resultado.rows]
     except Exception as e:
         print(f"Erro ao consultar '{collection_id}' no Appwrite: {e}")
         return []
 
 
 def create_row(collection_id: str, data: dict) -> dict:
-    """Cria um registro no Appwrite utilizando a API modernizada do TablesDB com fallback."""
+    """Cria um registro no Appwrite utilizando o TablesDB (Appwrite 1.8.0+)."""
     row_id = ID.unique()
     try:
-        if IS_TABLES_DB:
-            res = db_service.create_row(
-                database_id=DB_ID,
-                table_id=collection_id,
-                row_id=row_id,
-                data=data
-            )
-            return {"$id": getattr(res, "id", row_id), **getattr(res, "data", data)}
-        else:
-            res = db_service.create_document(
-                database_id=DB_ID,
-                collection_id=collection_id,
-                document_id=row_id,
-                data=data
-            )
-            return {"$id": getattr(res, "id", row_id), **data}
+        res = db_service.create_row(
+            database_id=DB_ID,
+            table_id=collection_id,
+            row_id=row_id,
+            data=data
+        )
+        return {"$id": res.id, **res.data}
     except Exception as e:
         print(f"  (Aviso: erro ao registrar documento no Appwrite: {e})")
         return {"$id": row_id, **data}

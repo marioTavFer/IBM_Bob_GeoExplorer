@@ -7,5 +7,15 @@ requires-python = ">=3.13"
 dependencies = [
     "appwrite>=23.0.0",
     "fastmcp>=4.0.0",
+    "pandas>=2.0.0",
     "python-dotenv>=1.2.3",
+    "streamlit>=1.35.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["testes"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
 ]

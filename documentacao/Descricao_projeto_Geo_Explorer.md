@@ -1,7 +1,7 @@
 # Documentação Detalhada do Projeto Geo-Explorer
 
 > **Projeto desenvolvido para o Desafio de Projeto da DIO:** *"Construindo Seu Primeiro Produto com um Agente de IA"*  
-> **Mentor de IA / Apoio:** IBM Bob / DIO Agent (+ Antigravity) 
+> **Mentor de IA / Apoio:** IBM Bob / DIO Agent (+ Antigravity)  
 > **Desenvolvedor:** Mario TavFer (`marioTavFer`)  
 > **Repositório:** [https://github.com/marioTavFer/IBM_Bob_GeoExplorer](https://github.com/marioTavFer/IBM_Bob_GeoExplorer)
 
@@ -10,11 +10,16 @@
 ## 1. Visão Geral do Produto
 
 O **Geo-Explorer** é uma solução completa para exploração de trilhas de aprendizagem em tecnologia da DIO (Digital Innovation One). Ele permite que a pessoa usuária:
+
 1. **Navegue e consulte** trilhas de conhecimento organizadas por categorias e níveis de senioridade.
 2. **Realize buscas dinâmicas** por palavras-chave em títulos e descrições de trilhas.
 3. **Receba desafios práticos de código** diretamente vinculados às trilhas selecionadas.
-4. **Simule a resolução e emita um certificado fictício de conclusão** com hash único de autenticidade, devidamente persistido em banco de dados em nuvem.
-5. **Disponibilize ferramentas MCP (Model Context Protocol)** para que Agentes de IA (como o IBM Bob e o Antigravity) consultem o sistema e emitam certificados de forma autônoma.
+4. **Simule a resolução e emita um certificado fictício de conclusão** com código único de autenticidade, persistido no Appwrite.
+5. **Consulte certificados já emitidos** por nome e trilha, com navegação direta ao desafio caso não encontrado.
+6. **Disponibilize ferramentas MCP (Model Context Protocol)** para que Agentes de IA (como o IBM Bob e o Antigravity) consultem o sistema e emitam certificados de forma autônoma.
+7. **Faça backup local dos dados** do Appwrite em um banco SQLite para resiliência e auditoria.
+
+O projeto oferece **duas interfaces de uso** — uma CLI (terminal) via `main.py` e uma interface web interativa via `app_streamlit.py` — além de um servidor MCP para integração com agentes de IA.
 
 ---
 
@@ -23,28 +28,31 @@ O **Geo-Explorer** é uma solução completa para exploração de trilhas de apr
 A arquitetura do projeto segue a separação modular proposta com o apoio do IBM Bob:
 
 ```text
-D:\IBM_Bob_GeoExplorer\
+IBM_Bob_GeoExplorer/
 ├── comandos/
-│   ├── mcp_server.py        # Servidor MCP (FastMCP) para integração com Agentes de IA
-│   ├── test_appwrite.py     # Script de verificação da conexão com o Appwrite
-│   ├── test_db_creation.py  # Script de teste de criação e estruturas no banco
-│   └── .gitkeep
+│   └── mcp_server.py                  # Servidor MCP (FastMCP) para integração com Agentes de IA
 ├── dados/
-│   ├── setup_geoexplorer.py # Script de automação de coleções e população de 30 trilhas
-│   └── .gitkeep
+│   ├── setup_geoexplorer.py           # Cria tabelas, colunas e popula as 30 trilhas no Appwrite
+│   ├── backup_db_appwrite.py          # Backup incremental Appwrite → SQLite local
+│   └── backup_db_appwrite.sqlite      # Banco SQLite gerado pelo backup (ignorado pelo Git)
 ├── documentacao/
-│   ├── Descricao_projeto_Geo_Explorer.md # Documentação técnica detalhada (este arquivo)
-│   └── .gitkeep
+│   └── Descricao_projeto_Geo_Explorer.md  # Documentação técnica detalhada (este arquivo)
 ├── testes/
-│   └── .gitkeep
-├── main.py                  # Aplicação principal interativa via CLI (terminal, refatorada com TablesDB)
-├── .env                     # Variáveis de ambiente secretas (ignorado pelo Git)
-├── .env.example             # Modelo das variáveis de ambiente necessárias
-├── .gitignore               # Regras de exclusão de versão do Git
-├── .python-version          # Versão do Python utilizada (3.13)
-├── pyproject.toml           # Arquivo de configuração de projeto e dependências do uv
-├── uv.lock                  # Trava de versões exatas das dependências do uv
-└── README.md                # Apresentação principal do repositório
+│   ├── test_appwrite.py               # Testes unitários — conexão e TablesDB (9 casos)
+│   ├── test_db_creation.py            # Testes unitários — criação de tabelas e colunas (14 casos)
+│   ├── test_mcp_server.py             # Testes unitários — ferramentas MCP (20 casos)
+│   ├── relatorio_test_appwrite.md     # Relatório de testes — conexão Appwrite
+│   ├── relatorio_test_db_creation.md  # Relatório de testes — criação de tabelas
+│   └── relatorio_testes_MCP.md        # Relatório de testes — servidor MCP (timestamp automático)
+├── main.py                            # Aplicação CLI interativa (terminal)
+├── app_streamlit.py                   # Aplicação Web interativa (Streamlit)
+├── .env                               # Variáveis de ambiente secretas (ignorado pelo Git)
+├── .env.example                       # Modelo das variáveis de ambiente necessárias
+├── .gitignore                         # Regras de exclusão de versão do Git
+├── .python-version                    # Versão do Python utilizada (3.13)
+├── pyproject.toml                     # Configuração de projeto e dependências do uv
+├── uv.lock                            # Trava de versões exatas das dependências
+└── README.md                          # Apresentação principal do repositório
 ```
 
 ---
@@ -61,17 +69,21 @@ D:\IBM_Bob_GeoExplorer\
 - **Plataforma:** Appwrite Cloud (`https://nyc.cloud.appwrite.io/v1`)
 - **ID do Projeto:** `6a9466d3003871d61864`
 - **Banco de Dados:** `escola`
-- **Modernização de API:** O código do projeto utiliza a API modernizada **`TablesDB`** (`list_rows`, `create_row`) a partir da versão 1.8.0+ do SDK, eliminando avisos de depreciação (`DeprecationWarning`) do antigo módulo `Databases`.
-- **Segurança de Variáveis de Ambiente:** As credenciais (`APPWRITE_ENDPOINT`, `APPWRITE_PROJECT`, `APPWRITE_API_KEY`) foram centralizadas no arquivo `.env`. O arquivo `.env` foi explicitamente inserido no `.gitignore` para proteção do projeto no GitHub.
+- **SDK:** Appwrite Python SDK **1.8.0+** — utiliza exclusivamente a API **`TablesDB`** (`list_rows`, `create_row`), eliminando o módulo legado `Databases` e os `DeprecationWarning` associados. Não há flag `IS_TABLES_DB` nem fallback condicional em nenhum arquivo do projeto.
+- **Segurança de Variáveis de Ambiente:** As credenciais (`APPWRITE_ENDPOINT`, `APPWRITE_PROJECT`, `APPWRITE_API_KEY`) estão centralizadas no arquivo `.env`, explicitamente inserido no `.gitignore`.
+- **Cache de conexão no Streamlit:** A instância do `TablesDB` é criada uma única vez via `@st.cache_resource`, evitando reconexões a cada interação do usuário.
 
 ---
 
 ## 4. Modelagem e Estrutura do Banco de Dados
 
-O banco de dados do **Geo-Explorer** foi modelado no Appwrite com três coleções/tabelas principais:
+### 4.1. Banco Appwrite: `escola`
 
-### 4.1. Coleção/Tabela: `trilhas` (Trilhas de Aprendizagem)
-Armazena a grade de 30 formações e trilhas de aprendizagem da DIO.
+O banco possui três tabelas principais gerenciadas pelo `TablesDB`:
+
+#### Tabela `trilhas` — Trilhas de Aprendizagem
+
+Armazena a grade de 30 formações e trilhas da DIO.
 
 | Atributo | Tipo | Tamanho | Obrigatório | Descrição |
 | :--- | :--- | :--- | :--- | :--- |
@@ -79,31 +91,46 @@ Armazena a grade de 30 formações e trilhas de aprendizagem da DIO.
 | `categoria` | String | 100 | Sim | Categoria de tecnologia (ex: Back-end, Data & AI) |
 | `nivel` | String | 50 | Sim | Nível exigido (Iniciante, Intermediário, Avançado) |
 | `descricao` | String | 1000 | Sim | Resumo descritivo dos conteúdos da trilha |
-| `duracao_horas` | Integer | - | Não | Carga horária estimada em horas |
+| `duracao_horas` | Integer | — | Não | Carga horária estimada em horas |
 
-#### Categoria e Grade Populada (30 Trilhas):
-1. **Back-end:** Formação Python Developer, Formação Java Developer, Formação .NET Developer, Formação Node.js Developer, Formação Golang Developer, Formação C++ Developer.
-2. **Front-end:** Formação JavaScript Developer, Formação React Web Developer, Formação Angular Developer, Formação HTML & CSS Web Developer.
-3. **Fullstack & Mobile:** Formação TypeScript Fullstack, Formação PHP Fullstack Developer, Formação Flutter Specialist, Formação Android Developer (Kotlin), Formação iOS Developer (Swift).
-4. **Data & AI:** Formação Ciência de Dados com Python, Formação Machine Learning Specialist, Formação Engenharia de Dados, Formação Power BI Analyst, Formação Engenharia de Prompts e IA Generativa, Formação Inteligência Artificial Fundamentos.
-5. **Cloud & DevOps:** Formação AWS Cloud Practitioner, Formação Azure Cloud Associate, Formação DevOps Fundamentals, Formação Docker & Kubernetes.
-6. **Segurança & Outros:** Formação Cybersecurity Specialist, Formação SQL & Banco de Dados Relacionais, Formação NoSQL & MongoDB, Formação Linux Fundamentals, Formação English4Tech - Comunicação Internacional.
+**Grade populada (30 trilhas):**
+1. **Back-end:** Python Developer, Java Developer, .NET Developer, Node.js Developer, Golang Developer, C++ Developer.
+2. **Front-end:** JavaScript Developer, React Web Developer, Angular Developer, HTML & CSS Web Developer.
+3. **Fullstack & Mobile:** TypeScript Fullstack, PHP Fullstack Developer, Flutter Specialist, Android Developer (Kotlin), iOS Developer (Swift).
+4. **Data & AI:** Ciência de Dados com Python, Machine Learning Specialist, Engenharia de Dados, Power BI Analyst, Engenharia de Prompts e IA Generativa, Inteligência Artificial Fundamentos.
+5. **Cloud & DevOps:** AWS Cloud Practitioner, Azure Cloud Associate, DevOps Fundamentals, Docker & Kubernetes.
+6. **Segurança & Outros:** Cybersecurity Specialist, SQL & Banco de Dados Relacionais, NoSQL & MongoDB, Linux Fundamentals, English4Tech.
 
 ---
 
-### 4.2. Coleção/Tabela: `desafios` (Desafios de Código)
-Armazena os exercícios práticos vinculados a cada trilha.
+#### Tabela `desafios` — Desafios de Código
+
+Armazena os exercícios práticos vinculados a cada trilha. Criados automaticamente na primeira vez que a trilha é acessada.
 
 | Atributo | Tipo | Tamanho | Obrigatório | Descrição |
 | :--- | :--- | :--- | :--- | :--- |
-| `trilha_id` | String | 100 | Sim | ID de documento da trilha correspondente |
+| `trilha_id` | String | 100 | Sim | `$id` da trilha correspondente no Appwrite |
 | `titulo` | String | 255 | Sim | Título do desafio de código |
 | `enunciado` | String | 2000 | Sim | Descrição do problema a ser resolvido |
 | `template_codigo` | String | 2000 | Sim | Código esqueleto inicial |
 
+**Enunciados por categoria** (gerados automaticamente quando não existem):
+
+| Categoria | Enunciado padrão |
+| :--- | :--- |
+| Back-end | Função Python que filtra valores acima da média |
+| Front-end | Componente funcional com lista formatada em HTML/CSS |
+| Data & AI | Script de análise estatística descritiva com Pandas |
+| Cloud & DevOps | Manifesto YAML com Service e Deployment Kubernetes |
+| Mobile | Tela com gerenciamento de estado consumindo API REST |
+| Segurança | Rotina de verificação de integridade via SHA-256 |
+| Banco de Dados | Consulta SQL com JOINs e TOP 5 clientes |
+| Fullstack | Integração formulário front-end + endpoint POST REST |
+
 ---
 
-### 4.3. Coleção/Tabela: `certificados` (Certificados Emitidos)
+#### Tabela `certificados` — Certificados Emitidos
+
 Registra o histórico de certificados fictícios gerados após a resolução dos desafios.
 
 | Atributo | Tipo | Tamanho | Obrigatório | Descrição |
@@ -113,24 +140,96 @@ Registra o histórico de certificados fictícios gerados após a resolução dos
 | `trilha_nome` | String | 255 | Sim | Nome da trilha concluída |
 | `data_emissao` | String | 100 | Sim | Data e hora exata da emissão do registro |
 
+**Regra de negócio:** certificados são emitidos **exclusivamente** após a submissão da solução na página de desafio (CLI ou Streamlit). A página de consulta de certificados **nunca emite** — apenas exibe ou redireciona ao desafio.
+
 ---
 
-## 5. Servidor MCP (Model Context Protocol) & Ferramentas Disponíveis
+### 4.2. Banco SQLite Local: `backup_db_appwrite.sqlite`
 
-O **Geo-Explorer** disponibiliza uma camada de integração com Agentes de IA através do padrão **Model Context Protocol (MCP)**, implementada em `comandos/mcp_server.py` utilizando o framework `FastMCP`.
+Gerado pelo script `dados/backup_db_appwrite.py`. Replica as três tabelas do Appwrite em SQLite para backup incremental local, com uma tabela adicional de auditoria:
 
-### 5.1. O que é o Servidor MCP?
+| Tabela SQLite | Colunas adicionais | Descrição |
+| :--- | :--- | :--- |
+| `trilhas` | `appwrite_id`, `backup_em` | Espelho da tabela Appwrite |
+| `desafios` | `appwrite_id`, `backup_em` | Espelho da tabela Appwrite |
+| `certificados` | `appwrite_id`, `backup_em` | Espelho da tabela Appwrite |
+| `backup_log` | `id`, `executado_em`, `trilhas`, `desafios`, `certificados` | Histórico de execuções do backup |
+
+A chave primária de cada tabela é o `appwrite_id` (`$id` do Appwrite), garantindo `INSERT OR REPLACE` idempotente — re-executar o backup não duplica registros.
+
+---
+
+## 5. Interfaces de Uso
+
+O Geo-Explorer oferece duas interfaces de interação equivalentes em funcionalidade, com características diferentes:
+
+### 5.1. Interface CLI — `main.py`
+
+Aplicação interativa de terminal. Navegação por menus numerados, sem dependência de navegador.
+
+**Fluxo de uso:**
+```
+Menu principal → Escolha de categoria (ou busca por palavra-chave)
+    → Lista de trilhas da categoria
+        → Detalhes da trilha
+            → Iniciar Desafio de Código
+                → Submissão com nome → Emissão de Certificado (ASCII art)
+```
+
+**Executar:**
+```powershell
+uv run python main.py
+```
+
+---
+
+### 5.2. Interface Web — `app_streamlit.py`
+
+Aplicação web construída com **Streamlit**, acessível em `http://localhost:8501`. Navegação por menu lateral com 6 páginas.
+
+**Executar:**
+```powershell
+uv run streamlit run app_streamlit.py
+```
+
+#### Páginas da Interface Web
+
+| Página | Descrição |
+| :--- | :--- |
+| 🏠 **Início** | Status de conexão com o Appwrite, métricas de trilhas e categorias disponíveis |
+| 📚 **Trilhas** | Listagem com filtro por categoria (selectbox) e busca por palavra-chave (text_input); cada trilha tem um expander com descrição e botão para ir ao desafio |
+| 💻 **Desafio de Código** | Seleção de trilha, exibição do enunciado e template de código; campo de nome para submissão; **única origem de emissão de certificados** |
+| 🏅 **Consultar Certificado** | Consulta por nome + trilha; exibe certificado se encontrado; se não encontrado, redireciona para o desafio com a trilha pré-selecionada |
+| 📋 **Certificados Emitidos** | Lista todos os certificados com filtros por nome e trilha, métricas (total, participantes únicos, trilhas contempladas) e detalhes individuais em expanders |
+| 💾 **Backup SQLite** | Executa backup Appwrite → SQLite com 1 clique; exibe métricas por tabela e histórico das últimas 10 execuções |
+
+#### Regras de Negócio da Interface Web
+
+- **Emissão de certificado:** ocorre **exclusivamente** na página 💻 Desafio de Código, após o usuário preencher o nome e submeter a solução.
+- **Consulta de certificado:** a página 🏅 apenas exibe certificados existentes. Se não encontrar, orienta o usuário a concluir o desafio primeiro.
+- **Cache de trilhas:** `@st.cache_data` com TTL de 30s para certificados e sem expiração para trilhas (botão "Atualizar lista" limpa manualmente).
+- **Navegação programática:** o botão "Ir para o Desafio de Código" usa `st.session_state["pagina"]` para redirecionar o radio do sidebar sem recarregar a página do zero.
+
+---
+
+## 6. Servidor MCP (Model Context Protocol) & Ferramentas Disponíveis
+
+O **Geo-Explorer** disponibiliza uma camada de integração com Agentes de IA através do padrão **Model Context Protocol (MCP)**, implementada em `comandos/mcp_server.py` com o framework `FastMCP`.
+
+### 6.1. O que é o Servidor MCP?
+
 O Servidor MCP atua como uma ponte padronizada (JSON-RPC) que permite que assistentes virtuais de IA (como IBM Bob, Antigravity, Claude Desktop, Cursor, etc.) consultem e interajam autonomamente com os dados do Appwrite sem necessidade de interface gráfica ou comandos manuais.
 
-### 5.2. Comandos e Ferramentas (Tools) Expostas
+### 6.2. Ferramentas (Tools) Expostas
 
 O servidor expõe **3 ferramentas principais**:
 
-#### 1. `listar_trilhas(categoria: str = None)`
-- **Descrição:** Lista as trilhas de aprendizagem cadastradas na nuvem Appwrite sem limitação de paginação (`Query.limit(100)`). Permite filtragem opcional por categoria.
+#### `listar_trilhas(categoria: str | None = None)`
+
+- **Descrição:** Lista as trilhas cadastradas no Appwrite (até 100 por chamada). Permite filtragem opcional por categoria, com comparação case-insensitive.
 - **Parâmetros:**
-  - `categoria` *(opcional, string)*: Nome da categoria para filtrar (ex: `"Back-end"`, `"Data & AI"`). Se omitido, retorna todas as trilhas.
-- **Formato de Retorno (JSON Array):**
+  - `categoria` *(opcional, string)*: Nome da categoria (ex: `"Back-end"`, `"Data & AI"`). Se omitido, retorna todas.
+- **Retorno (JSON Array):**
   ```json
   [
     {
@@ -146,11 +245,12 @@ O servidor expõe **3 ferramentas principais**:
 
 ---
 
-#### 2. `obter_desafio(trilha_titulo: str)`
-- **Descrição:** Busca o desafio de código existente para uma trilha ou gera um novo desafio contextualizado com base na categoria da trilha caso ainda não exista no banco de dados.
+#### `obter_desafio(trilha_titulo: str)`
+
+- **Descrição:** Busca o desafio existente para uma trilha ou gera um novo desafio contextualizado pela categoria, caso ainda não exista no banco.
 - **Parâmetros:**
-  - `trilha_titulo` *(obrigatório, string)*: Título exato ou parcial da trilha (ex: `"Python"`, `"AWS Cloud Practitioner"`).
-- **Formato de Retorno (JSON Object):**
+  - `trilha_titulo` *(obrigatório, string)*: Título exato ou parcial (ex: `"Python"`, `"AWS Cloud Practitioner"`).
+- **Retorno (JSON Object):**
   ```json
   {
     "trilha": "Formacao Python Developer",
@@ -162,12 +262,13 @@ O servidor expõe **3 ferramentas principais**:
 
 ---
 
-#### 3. `emitir_certificado(nome_usuario: str, trilha_nome: str)`
-- **Descrição:** Gera e persiste um certificado fictício de conclusão no Appwrite, gerando um código único de autenticidade no formato `GEO-CERT-YYYY-HASH8`.
+#### `emitir_certificado(nome_usuario: str, trilha_nome: str)`
+
+- **Descrição:** Gera e persiste um certificado fictício de conclusão no Appwrite com código único no formato `GEO-CERT-YYYY-HASH8`.
 - **Parâmetros:**
   - `nome_usuario` *(obrigatório, string)*: Nome completo do estudante.
   - `trilha_nome` *(obrigatório, string)*: Nome da trilha concluída.
-- **Formato de Retorno (JSON Object):**
+- **Retorno (JSON Object):**
   ```json
   {
     "codigo": "GEO-CERT-2026-B8E2D91F",
@@ -177,39 +278,104 @@ O servidor expõe **3 ferramentas principais**:
   }
   ```
 
-### 5.3. Inicialização e Testes do Servidor MCP
-Para rodar o servidor MCP localmente em modo standalone:
+### 6.3. Inicialização do Servidor MCP
+
 ```powershell
 uv run python comandos/mcp_server.py
 ```
 
 ---
 
-## 6. Guia de Comandos do Projeto
+## 7. Suite de Testes
 
-Todos os comandos devem ser executados a partir do diretório raiz `D:\IBM_Bob_GeoExplorer`:
+Todos os testes são **unitários e isolados de rede** — nenhuma chamada real ao Appwrite é feita durante a execução. O SDK é substituído integralmente por `unittest.mock.MagicMock`.
 
-### 6.1. Executar a Aplicação Interativa (CLI)
+| Arquivo | Classe(s) | Casos | Cobertura |
+| :--- | :--- | :--- | :--- |
+| `testes/test_appwrite.py` | `TestAppwriteConnection`, `TestAppwriteListDatabases` | 9 | Inicialização Client, TablesDB, `db.list()` |
+| `testes/test_db_creation.py` | `TestCriacaoTabelas`, `TestColunasTabelaTrilhas`, `TestColunasTabelaDesafios`, `TestColunasTabelaCertificados` | 14 | `create_table`, tipos e tamanhos de colunas, tratamento de tabela existente |
+| `testes/test_mcp_server.py` | `TestFetchRows`, `TestCreateRow`, `TestListarTrilhas`, `TestObterDesafio`, `TestEmitirCertificado` | 20 | Todas as funções e ferramentas MCP |
+| **Total** | | **43** | |
+
+### Executar os testes
+
 ```powershell
-uv run python main.py
+# Suite completa
+uv run pytest testes/ -v
+
+# Suite individual
+uv run pytest testes/test_mcp_server.py -v
+uv run pytest testes/test_appwrite.py -v
+uv run pytest testes/test_db_creation.py -v
 ```
 
-### 6.2. Repopular/Configurar o Banco de Dados no Appwrite
+> O arquivo `testes/relatorio_testes_MCP.md` é atualizado automaticamente com a **data e hora de execução** a cada vez que `test_mcp_server.py` é executado.
+
+---
+
+## 8. Dependências do Projeto
+
+Gerenciadas via `uv` e declaradas em `pyproject.toml`:
+
+| Pacote | Versão mínima | Uso |
+| :--- | :--- | :--- |
+| `appwrite` | 23.0.0 | SDK Appwrite — TablesDB, Client, Query, ID |
+| `fastmcp` | 4.0.0 | Framework para servidor MCP |
+| `streamlit` | 1.35.0 | Interface web interativa |
+| `pandas` | 2.0.0 | Tabelas de dados na interface Streamlit |
+| `python-dotenv` | 1.2.3 | Carregamento de variáveis de ambiente do `.env` |
+| `pytest` *(dev)* | 8.0.0 | Framework de testes unitários |
+
+---
+
+## 9. Guia de Comandos do Projeto
+
+Todos os comandos devem ser executados a partir do diretório raiz do projeto:
+
+### 9.1. Instalar dependências
+
+```powershell
+uv sync
+```
+
+### 9.2. Popular o banco de dados no Appwrite (primeira execução)
+
 ```powershell
 uv run python dados/setup_geoexplorer.py
 ```
 
-### 6.3. Testar a Conexão com o Appwrite
+### 9.3. Executar a Aplicação CLI (terminal)
+
 ```powershell
-uv run python comandos/test_appwrite.py
+uv run python main.py
 ```
 
-### 6.4. Iniciar o Servidor MCP para Agentes de IA
+### 9.4. Executar a Aplicação Web (Streamlit)
+
+```powershell
+uv run streamlit run app_streamlit.py
+```
+
+### 9.5. Iniciar o Servidor MCP para Agentes de IA
+
 ```powershell
 uv run python comandos/mcp_server.py
 ```
 
-### 6.5. Gerenciar Pacotes e Dependências com `uv`
+### 9.6. Fazer Backup Local (Appwrite → SQLite)
+
+```powershell
+uv run python dados/backup_db_appwrite.py
+```
+
+### 9.7. Executar os Testes Unitários
+
+```powershell
+uv run pytest testes/ -v
+```
+
+### 9.8. Gerenciar Pacotes e Dependências com `uv`
+
 ```powershell
 # Adicionar nova biblioteca
 uv add <nome-do-pacote>
